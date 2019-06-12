@@ -1,4 +1,4 @@
-# Payments Sample [![Build Status](https://travis-ci.org/michaljemala/payments-sample.svg?branch=master)](https://travis-ci.org/michaljemala/payments-sample)[![Go Report Card](https://goreportcard.com/badge/github.com/michaljemala/payments-sample)](https://goreportcard.com/report/github.com/michaljemala/payments-sample)
+# Payments Sample [![Build Status](https://travis-ci.org/michaljemala/payments-sample.svg?branch=master)](https://travis-ci.org/michaljemala/payments-sample)
 
 This sample demonstrates a simple Payments server with a REST API exposed over HTTP.  
 
