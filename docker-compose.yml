@@ -1,0 +1,18 @@
+version: '3.7'
+services:
+  payments:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:80
+    depends_on:
+      - db
+    command: ["payments-server", "-http", ":80", "-database", "postgres://admin:s3cret@db:5432/payments?sslmode=disable", "-migrations", "file://./scripts/migrations/postgres"]
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: s3cret
+      POSTGRES_DB: payments

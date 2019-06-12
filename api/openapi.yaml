@@ -1,0 +1,382 @@
+openapi: 3.0.2
+info:
+  title: Payments API
+  description: A description of simple payments REST API.
+  version: 0.0.1
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /payments:
+    get:
+      summary: Retrieve collection of payments.
+      operationId: findPayments
+      parameters:
+        - name: 'filter[id]'
+          description: Retrieve only payments having the specified id.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: 'filter[debtor.account_number]'
+          description: Retrieve only payments made from a specified account number.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: 'filter[creditor.account_number]'
+          description: Retrieve only payments made to a specified account number.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: 'page[number]'
+          description: 'Retrieve only specified page.'
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: 'page[size]'
+          description: 'Retrieve only specified number of items on a page.'
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+      responses:
+        '200':
+          description: Successfuly retrieved payment collection.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaymentCollectionResponse'
+        '400':
+          description: Invalid query parameters.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a new payment.
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreateRequest'
+      responses:
+        '201':
+          description: New payment successfully created.
+          content:
+            application/vnd+api+json:
+              schema:
+                $ref: '#/components/schemas/PaymentCreateResponse'
+        '400':
+          description: Unable to create payment due to invalid input.
+          content:
+            application/vnd+api+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+        '409':
+          description: Unable to create payment due to resource attributes conflict.
+          content:
+            application/vnd+api+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+  /payments/{payment_id}:
+    get:
+      summary: Retrieve an existing payment.
+      operationId: getPaymentById
+      parameters:
+        - name: payment_id
+          in: path
+          description: Unique payment identifier.
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '200':
+          description: Payment successfully retrieved.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaymentGetResponse'
+        '404':
+          description: Payment not found.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+    patch:
+      summary: Edit an existing payment.
+      operationId: editPayment
+      parameters:
+        - name: payment_id
+          in: path
+          description: Unique payment identifier.
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      requestBody:
+        required: true
+        content:
+          application/vnd+api+json:
+            schema:
+              $ref: '#/components/schemas/PaymentEditRequest'
+      responses:
+        '200':
+          description: Payment successfully edited.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaymentEditResponse'
+        '404':
+          description: Payment not found.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete an existing payment.
+      operationId: deletePayment
+      parameters:
+        - name: payment_id
+          in: path
+          description: Unique payment identifier.
+          required: true
+          schema:
+            $ref: '#/components/schemas/ID'
+      responses:
+        '204':
+          description: An existing payment successfully deleted.
+components:
+  schemas:
+    Error:
+      description: An API error.
+      type: object
+      required: [status, code, title]
+      properties:
+        status:
+          type: string
+          description: HTTP status code.
+        code:
+          type: string
+          description: An application-specific error code.
+        title:
+          type: string
+          description: A human-readable summary of the problem.
+        detail:
+          description: A human-readable explanation of the problem.
+          type: object
+    ID:
+      description: Globally unique identifier of a resource. in form of UUIDv4.
+      type: string
+      format: uuid
+    CurrencyCode:
+      description: Currency code as defined in [ISO 4217](http://www.iso.org/iso/home/standards/currency_codes.htm).
+      type: string
+    Monetary:
+      description: Represents a monetary amount.
+      type: object
+      properties:
+        value:
+          type: string
+          pattern: '^(0|[1-9]\d*)(\.\d{2})?$'
+        currency:
+          $ref: '#/components/schemas/CurrencyCode'
+    Address:
+      type: object
+      properties:
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+        postal_code:
+          type: string
+        country_code:
+          description: ISO 3166 format country code.
+          type: string
+    PaymentScheme:
+      type: string
+      enum: [SWIFT, SEPA]
+    PaymentParty:
+      type: object
+      properties:
+        name:
+          description: Name of the payment party.
+          type: string
+        account_name:
+          description: Name of beneficiary as given with account
+          type: string
+        account_number:
+          description: Beneficiary account number
+          type: string
+        account_provider:
+          $ref: '#/components/schemas/AccountProvider'
+        address:
+          $ref: '#/components/schemas/Address'
+    AccountProvider:
+      type: object
+      properties:
+        code:
+          description: Account provider code.
+          type: string
+        name:
+          description: Human-redable name of the account provider.
+          type: string
+    PaymentCollectionResponse:
+      description: Payment collection.
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [id, type, attributes]
+          properties:
+            id:
+              $ref: '#/components/schemas/ID'
+            type:
+              type: string
+              enum: [payments]
+            attributes:
+              type: object
+              properties:
+                amount:
+                  $ref: '#/components/schemas/Monetary'
+                debtor:
+                  $ref: '#/components/schemas/PaymentParty'
+                creditor:
+                  $ref: '#/components/schemas/PaymentParty'
+                scheme:
+                  $ref: '#/components/schemas/PaymentScheme'
+        links:
+          type: object
+          description: Pagination links.
+          properties:
+            first:
+              description: Link to the first page.
+              type: string
+            last:
+              description: Link to the last page.
+              type: string
+            next:
+              description: Link to the next page.
+              type: string
+            prev:
+              description: Link to the previous page.
+              type: string
+    PaymentCreateRequest:
+      description: Payment resource.
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [id, type, attributes]
+          properties:
+            id:
+              $ref: '#/components/schemas/ID'
+            type:
+              type: string
+              enum: [payments]
+            attributes:
+              required: [amount, debtor, creditor, scheme]
+              properties:
+                amount:
+                  allOf:
+                    - $ref: '#/components/schemas/Monetary'
+                  required: [value, currency]
+                debtor:
+                  allOf:
+                    - $ref: '#/components/schemas/PaymentParty'
+                  required: [account_number]
+                creditor:
+                  allOf:
+                    - $ref: '#/components/schemas/PaymentParty'
+                  required: [account_number]
+                scheme:
+                  $ref: '#/components/schemas/PaymentScheme'
+    PaymentCreateResponse:
+      description: Payment resource.
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/ID'
+            type:
+              type: string
+              enum: [payments]
+            attributes:
+              properties:
+                amount:
+                  $ref: '#/components/schemas/Monetary'
+                debtor:
+                  $ref: '#/components/schemas/PaymentParty'
+                creditor:
+                  $ref: '#/components/schemas/PaymentParty'
+                scheme:
+                  $ref: '#/components/schemas/PaymentScheme'
+    PaymentGetResponse:
+      type: object
+    PaymentEditRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required: [id, type, attributes]
+          properties:
+            id:
+              $ref: '#/components/schemas/ID'
+            type:
+              type: string
+              enum: [payments]
+            attributes:
+              properties:
+                amount:
+                  $ref: '#/components/schemas/Monetary'
+                debtor:
+                  $ref: '#/components/schemas/PaymentParty'
+                creditor:
+                  $ref: '#/components/schemas/PaymentParty'
+                scheme:
+                  $ref: '#/components/schemas/PaymentScheme'
+    PaymentEditResponse:
+      description: Payment resource.
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/ID'
+            type:
+              type: string
+              enum: [payments]
+            attributes:
+              properties:
+                amount:
+                  $ref: '#/components/schemas/Monetary'
+                debtor:
+                  $ref: '#/components/schemas/PaymentParty'
+                creditor:
+                  $ref: '#/components/schemas/PaymentParty'
+                scheme:
+                  $ref: '#/components/schemas/PaymentScheme'
